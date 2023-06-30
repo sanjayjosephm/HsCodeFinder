@@ -1,49 +1,68 @@
 const express = require("express");
 const app = express();
 const path = require('path');
-const XLSX = require("xlsx");
-
-// Serve static files from the "public" directory
-app.use(express.static(path.join(__dirname, "public"), {
-  setHeaders: (res, filePath) => {
-    const mimeType = mime.getType(filePath);
-    res.setHeader("Content-Type", mimeType);
-  },
-}));
-
-app.get("/", function (req, res) {
-    res.sendFile(path.join(__dirname, "index.html"));
+app.use(express.static(path.join(__dirname, "public")));
+  
+  app.get("/", function (req, res) {
+      res.sendFile(path.join(__dirname, "index.html"));
+  });
+  
+  app.listen(3000, function () {
+      console.log("Server is running on localhost:3000");
 });
 
-app.listen(3000, function () {
-    console.log("Server is running on localhost:3000");
+
+
+const { Client } = require('pg');
+
+
+// import { Client } from 'pg'
+
+const client = new Client({
+    host: 'localhost',
+    user: 'postgres',
+    database: 'postgres',
+    password: 'root',
+    port: 5432,
+});
+client.connect(function(err) {
+    if (err) throw err;
+    console.log("Connected!");
 });
 
-console.log("hello")
-const workbook = XLSX.readFile("hscode_data.xlsx");
-const worksheet = workbook.Sheets["chapter1"];
-const arrChapter1 = XLSX.utils.sheet_to_json(worksheet)
-let objectEnt = Object.entries(arrChapter1)
-
-console.log(objectEnt[0][1]);
-
-// app.js
-
-// Get the necessary elements from the DOM
+client.query(`SELECT * FROM public."hsCodeChapter1"`,(err,res)=>{
+    if(!err){
+        console.log(res.rows)
+    }
+    else{
+        console.log(err.message)
+    }
+})
 
 
-// const section1 = document.getElementById("section-1");
-// const section2 = document.getElementById("section-2");
-// const section1Button = document.getElementById("button-1");
-// const section2Button = document.getElementById("button-2");
+// const hsCode = document.getElementById("hs-code")
+// console.log("heofishof")
+// const hsDesciption = document.getElementById("hs-description")
+// const button1 = document.getElementById("button-1")
+// const button2 = document.getElementById("button-2")
+// const codeResult = document.getElementById("result-1")
+// const descriptionResult = document.getElementById("result-2")
 
-// console.log(section1)
 
-// section1Button.addEventListener("click",function(event){
-//   event.preventDefault();
-//   console.log("clicked")
+// button1.addEventListener("click",function(event){
+//     event.preventDefault()
+//     let hsCodeValue = hsCode.value
+//     console.log(hsCodeValue)
+//     if(hsCodeValue!=""){
+//         codeResult.innerHTML = `the code : ${hsCodeValue}`
+//     }
 // })
-// section2Button.addEventListener("click",function(event){
-//   event.preventDefault();
-//   console.log("clicked")
+
+// button2.addEventListener("click",function(event){
+//     event.preventDefault()
+//     let hsDescriptionValue = hsDesciption.value
+//     console.log(hsDescriptionValue)
+//     if(hsDescriptionValue!=""){
+//         descriptionResult.innerHTML = `the description : ${hsDescriptionValue}`
+//     }
 // })
