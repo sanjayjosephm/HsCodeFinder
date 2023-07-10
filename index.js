@@ -1,68 +1,75 @@
+
 const express = require("express");
 const app = express();
 const path = require('path');
-app.use(express.static(path.join(__dirname, "public")));
-  
-  app.get("/", function (req, res) {
-      res.sendFile(path.join(__dirname, "index.html"));
-  });
-  
-  app.listen(3000, function () {
-      console.log("Server is running on localhost:3000");
-});
-
-
-
 const { Client } = require('pg');
 
+app.use(express.static(path.join(__dirname, "public")));
+app.use(express.json());
 
-// import { Client } from 'pg'
-
-const client = new Client({
-    host: 'localhost',
-    user: 'postgres',
-    database: 'postgres',
-    password: 'root',
-    port: 5432,
-});
-client.connect(function(err) {
-    if (err) throw err;
-    console.log("Connected!");
+app.get("/", function (req, res) {
+    res.sendFile(path.join(__dirname, "index.html"));
 });
 
-client.query(`SELECT * FROM public."hsCodeChapter1"`,(err,res)=>{
-    if(!err){
-        console.log(res.rows)
-    }
-    else{
-        console.log(err.message)
-    }
-})
+app.post("/data", function (req, res) {
+    const client = new Client({
+        host: 'localhost',
+        user: 'postgres',
+        database: 'postgres',
+        password: 'root',
+        port: 5432,
+    });
 
+    client.connect(function (err) {
+        if (err) {
+            console.error("Failed to connect to the database:", err.message);
+            res.sendStatus(500);
+            return;
+        }
 
-// const hsCode = document.getElementById("hs-code")
-// console.log("heofishof")
-// const hsDesciption = document.getElementById("hs-description")
-// const button1 = document.getElementById("button-1")
-// const button2 = document.getElementById("button-2")
-// const codeResult = document.getElementById("result-1")
-// const descriptionResult = document.getElementById("result-2")
+        if (req.body.hsCodeValue) {
+            const hsCode = req.body.hsCodeValue;
+            client.query(`SELECT * FROM public."hscodechapters" WHERE "hscode" = $1`,[hsCode], (err, result) => {
+                client.end();
 
+                if (err) {
+                    console.error("Failed to execute the query:", err.message);
+                    res.sendStatus(500);
+                    return;
+                }
 
-// button1.addEventListener("click",function(event){
-//     event.preventDefault()
-//     let hsCodeValue = hsCode.value
-//     console.log(hsCodeValue)
-//     if(hsCodeValue!=""){
-//         codeResult.innerHTML = `the code : ${hsCodeValue}`
-//     }
-// })
+                if (result.rowCount > 0) {
+                    const description = result.rows[0].hsdescription;
+                    console.log(description)
+                    res.json({ description });
+                } else {
+                    res.json({ description: "No description found" });
+                }
+            });
+        } else if (req.body.hsDescription) {
+            const hsDescription = req.body.hsDescription;
+            client.query(`SELECT * FROM public."hscodechapters" WHERE "hsdescription" = $1`, [hsDescription], (err, result) => {
+                client.end(); // Close the database connection
 
-// button2.addEventListener("click",function(event){
-//     event.preventDefault()
-//     let hsDescriptionValue = hsDesciption.value
-//     console.log(hsDescriptionValue)
-//     if(hsDescriptionValue!=""){
-//         descriptionResult.innerHTML = `the description : ${hsDescriptionValue}`
-//     }
-// })
+                if (err) {
+                    console.error("Failed to execute the query:", err.message);
+                    res.sendStatus(500);
+                    return;
+                }
+
+                if (result.rowCount > 0) {
+                    const code = result.rows[0].hscode;
+                    res.json({ code });
+                } else {
+                    res.json({ code: "No code found" });
+                }
+            });
+        } else {
+            res.sendStatus(400); // Bad request if neither hsCode nor hsDescription is provided
+        }
+    });
+});
+
+app.listen(3000, function () {
+    console.log("Server is running on localhost:3000");
+});
